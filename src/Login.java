@@ -79,4 +79,5 @@ public class Login {
         // 显示窗口
         frame.setVisible(true);
     }
+    //登录点击，dialog更新保存数据
 }

@@ -165,4 +165,97 @@ public class Database {
             e.printStackTrace();
         }
     }
+    /**
+     * 检测用户登录（验证用户名和密码是否匹配）
+     * @param username 用户名
+     * @param password 密码
+     * @return 登录成功返回true，否则返回false
+     */
+    public static boolean loginUser(String username, String password) {
+        // 获取数据库连接
+        Connection conn = getConnection();
+        if (conn == null) {
+            System.err.println("无法验证用户登录：数据库连接未建立。");
+            connectToDatabase(); // 尝试重新连接
+            conn = getConnection();
+            if (conn == null) {
+                return false; // 如果仍然无法连接，则返回false
+            }
+        }
+        
+        String sql = "SELECT * FROM xiangqi.usr WHERE username = ? AND password = ?";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            // 设置参数
+            pstmt.setString(1, username);
+            pstmt.setString(2, password);
+            
+            // 执行查询
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                System.out.println("用户 " + username + " 登录成功！");
+                return true;
+            } else {
+                System.out.println("用户名或密码错误！");
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("验证用户登录时出错: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * 注册新用户（检测是否已经存在用户，如果不存在则写入新用户）
+     * @param username 用户名
+     * @param password 密码
+     * @return 注册成功返回true，用户已存在或注册失败返回false
+     */
+    public static boolean registerUser(String username, String password) {
+        // 获取数据库连接
+        Connection conn = getConnection();
+        if (conn == null) {
+            System.err.println("无法注册用户：数据库连接未建立。");
+            connectToDatabase(); // 尝试重新连接
+            conn = getConnection();
+            if (conn == null) {
+                return false; // 如果仍然无法连接，则返回false
+            }
+        }
+        
+        // 首先检查用户是否已存在
+        String checkSql = "SELECT * FROM xiangqi.usr WHERE username = ?";
+        
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setString(1, username);
+            ResultSet rs = checkStmt.executeQuery();
+            
+            if (rs.next()) {
+                System.out.println("用户 " + username + " 已存在！");
+                return false;
+            }
+            
+            // 用户不存在，执行注册
+            String insertSql = "INSERT INTO xiangqi.usr (username, password, `save`) VALUES (?, ?, 0)";
+            
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                insertStmt.setString(1, username);
+                insertStmt.setString(2, password);
+                
+                int affectedRows = insertStmt.executeUpdate();
+                if (affectedRows > 0) {
+                    System.out.println("用户 " + username + " 注册成功！");
+                    return true;
+                } else {
+                    System.out.println("用户注册失败。");
+                    return false;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("注册用户时出错: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

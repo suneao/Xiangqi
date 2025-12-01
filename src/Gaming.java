@@ -22,6 +22,7 @@ public class Gaming {
         // 可以添加优雅关闭逻辑，确保程序退出时停止所有线程
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             // 这里可以添加资源清理代码
+            Database.closeDatabaseConnection();
             System.out.println("游戏程序正在关闭...");
         }));
     }

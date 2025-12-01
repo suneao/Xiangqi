@@ -8,7 +8,7 @@ public class GameFrame implements Runnable {
         SwingUtilities.invokeLater(() -> {
             // 创建主窗口
             JFrame frame = new JFrame("象棋");
-            frame.setSize(400, 300);
+            frame.setSize(1280, 720);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLocationRelativeTo(null); // 窗口居中
             frame.setLayout(new BorderLayout(10, 10));

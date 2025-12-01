@@ -194,6 +194,13 @@ public class Database {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 System.out.println("用户 " + username + " 登录成功！");
+                Main.username = username;
+                
+                // 获取用户保存的游戏编号
+                int saveNum = rs.getInt("save");
+                Main.num = saveNum;
+                System.out.println("用户保存的游戏编号: " + saveNum);
+                
                 return true;
             } else {
                 System.out.println("用户名或密码错误！");

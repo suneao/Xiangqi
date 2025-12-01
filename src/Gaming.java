@@ -1,6 +1,7 @@
 public class Gaming {
     public static void main(String[] args) {
         // 创建游戏窗口线程
+        Main.board = Main.saveToboard(Database.getGame(Main.num).status);
         Thread frameThread = new Thread(new GameFrame());
         
         // 创建游戏循环线程

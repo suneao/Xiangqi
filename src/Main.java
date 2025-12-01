@@ -1,5 +1,5 @@
 public class Main {
-    public static int[][] board = new int[10][9];
+    public static int[][] board = saveToboard(Env.DEFAULT_BOARD.toString());
     public static int[][] formal_board = new int[10][9];
     public static int[][] selection = new int[10][9];
     public static boolean tern = true;

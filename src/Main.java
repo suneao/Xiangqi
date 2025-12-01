@@ -3,8 +3,9 @@ public class Main {
     public static int[][] formal_board = new int[10][9];
     public static int[][] selection = new int[10][9];
     public static boolean tern = true;
-    public static int select = 0;
-    public static int last = 0;
+    public static xy select = new xy(-1,-1);
+    public static boolean selected = false;
+    public static xy last = new xy(-1,-1);
     public static String username;
     public static int num;
 

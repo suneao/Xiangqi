@@ -11,6 +11,7 @@ public class GameLoop implements Runnable {
         while (running) {
             GameLogic.main(null); // 执行游戏逻辑
             waitFor(16); // 等待16毫秒，约60FPS
+
         }
     }
     

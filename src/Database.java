@@ -195,7 +195,6 @@ public class Database {
             if (rs.next()) {
                 System.out.println("用户 " + username + " 登录成功！");
                 Main.username = username;
-                
                 // 获取用户保存的游戏编号
                 int saveNum = rs.getInt("save");
                 Main.num = saveNum;
@@ -249,7 +248,7 @@ public class Database {
             try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
                 insertStmt.setString(1, username);
                 insertStmt.setString(2, password);
-                
+                insertStmt.setString(3, "0");
                 int affectedRows = insertStmt.executeUpdate();
                 if (affectedRows > 0) {
                     System.out.println("用户 " + username + " 注册成功！");

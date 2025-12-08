@@ -21,6 +21,7 @@ public class GameFrame implements Runnable {
             frame.setSize(1280, 720);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLocationRelativeTo(null);
+            frame.setResizable(false);
             
             JLayeredPane layeredPane = new JLayeredPane();
             frame.setContentPane(layeredPane);

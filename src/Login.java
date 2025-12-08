@@ -17,14 +17,12 @@ public class Login {
     }
 
     private void initialize() {
-        // 创建主窗口
-        frame = new JFrame("中国象棋 - 登录");
+        frame = new JFrame("中国象棋登陆界面");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(450, 400);
-        frame.setLocationRelativeTo(null); // 窗口居中显示
+        frame.setLocationRelativeTo(null);
         frame.setResizable(false);
         
-        // 创建主面板
         JPanel mainPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {

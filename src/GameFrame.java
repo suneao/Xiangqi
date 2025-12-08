@@ -86,15 +86,19 @@ public class GameFrame implements Runnable {
                     
                     drawChessBoard(g2d, x, y, boardSize);
                     
-                    g2d.setColor(new Color(139, 69, 19));
+                    // 绘制棋盘边缘线（在棋子下面）
+                    g2d.setColor(new Color(139, 0, 0)); // 暗红色
                     g2d.setStroke(new BasicStroke(3));
                     g2d.draw(textureRectangle);
+                    
+                    // 绘制所有棋子（在棋盘边缘线上面）
+                    drawAllPieces(g2d, x, y, boardSize);
                     
                     g2d.dispose();
                 }
                 
                 private void drawChessBoard(Graphics2D g2d, int x, int y, int boardSize) {
-                    g2d.setColor(new Color(171, 93, 22));
+                    g2d.setColor(new Color(139, 0, 0)); // 暗红色
                     g2d.setStroke(new BasicStroke(2));
                     
                     int cellWidth = boardSize / 8;
@@ -135,9 +139,101 @@ public class GameFrame implements Runnable {
             chessBoardPanel.setPreferredSize(new Dimension(800, 800));
             chessBoardPanel.setOpaque(false);
             
+            // 添加鼠标点击监听器
+            chessBoardPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    xy clickedPos = getClickedPosition(e.getX(), e.getY());
+                    Main.select = clickedPos;
+                    if (clickedPos != null) {
+                        System.out.println("点击位置: 行=" + clickedPos.y + ", 列=" + clickedPos.x);
+                        // 可以在这里添加棋子选择逻辑
+                    }
+                }
+            });
+            
         } catch (IOException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(frame, "加载棋盘资源失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * 获取鼠标点击位置对应的棋盘行列坐标（检测交叉点）
+     * @param mouseX 鼠标点击的X坐标
+     * @param mouseY 鼠标点击的Y坐标
+     * @return xy对象，包含行和列坐标，如果点击位置不在棋盘内则返回null
+     */
+    private xy getClickedPosition(int mouseX, int mouseY) {
+        // 获取棋盘面板的尺寸
+        int panelWidth = chessBoardPanel.getWidth();
+        int panelHeight = chessBoardPanel.getHeight();
+        
+        // 计算棋盘尺寸和位置（与paintComponent中的计算一致）
+        int boardSize = Math.min(panelWidth, panelHeight) * 7 / 10;
+        int boardX = (panelWidth - boardSize) / 2;
+        int boardY = (panelHeight - boardSize) / 2;
+        
+        // 检查点击是否在棋盘范围内
+        if (mouseX < boardX || mouseX > boardX + boardSize || 
+            mouseY < boardY || mouseY > boardY + boardSize) {
+            return null; // 点击位置不在棋盘内
+        }
+        
+        // 计算每个格子的宽度和高度
+        int cellWidth = boardSize / 8;
+        int cellHeight = boardSize / 9;
+        
+        // 计算点击位置相对于棋盘左上角的坐标
+        int relativeX = mouseX - boardX;
+        int relativeY = mouseY - boardY;
+        
+        // 计算最近的交叉点列（0-8，共9列交叉点）
+        int col = Math.round((float)relativeX / cellWidth);
+        // 计算最近的交叉点行（0-9，共10行交叉点）
+        int row = Math.round((float)relativeY / cellHeight);
+        
+        // 确保行列在有效范围内（象棋棋盘有9列10行交叉点）
+        if (col >= 0 && col <= 8 && row >= 0 && row <= 9) {
+            return new xy(col, row);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 在棋盘上绘制棋子材质
+     * @param g2d 图形上下文
+     * @param num 材质编号（对应content/Pieces下的图片文件名）
+     * @param pos 棋子位置（行列坐标）
+     */
+    private void drawPiece(Graphics2D g2d, int num, xy pos) {
+        try {
+            // 加载棋子材质
+            BufferedImage pieceImage = ImageIO.read(new File("content/Pieces/" + num + ".png"));
+            
+            // 获取棋盘尺寸和位置
+            int boardSize = Math.min(chessBoardPanel.getWidth(), chessBoardPanel.getHeight()) * 7 / 10;
+            int boardX = (chessBoardPanel.getWidth() - boardSize) / 2;
+            int boardY = (chessBoardPanel.getHeight() - boardSize) / 2;
+            
+            // 计算每个格子的尺寸
+            int cellWidth = boardSize / 8;
+            int cellHeight = boardSize / 9;
+            
+            // 计算棋子缩放后的大小（缩小为原来的25%，稍微增大一些）
+            int scaledWidth = (int) (pieceImage.getWidth() * 0.25);
+            int scaledHeight = (int) (pieceImage.getHeight() * 0.25);
+            
+            // 计算棋子绘制位置（交叉点中心）
+            int pieceX = boardX + pos.x * cellWidth - scaledWidth / 2;
+            int pieceY = boardY + pos.y * cellHeight - scaledHeight / 2;
+            
+            // 绘制缩放后的棋子
+            g2d.drawImage(pieceImage.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH), pieceX, pieceY, null);
+            
+        } catch (IOException e) {
+            System.err.println("加载棋子材质失败: " + num + ".png");
         }
     }
     
@@ -147,7 +243,40 @@ public class GameFrame implements Runnable {
     }
 
     private void detectBoardSelectionAndTern() {
-        // 检测逻辑待实现
+        // 触发棋盘重绘，更新棋子显示
+        Main.board=Main.default_board;
+        if (chessBoardPanel != null) {
+            chessBoardPanel.repaint();
+        }
+    }
+    
+    /**
+     * 绘制棋盘上所有棋子
+     * @param g2d 图形上下文
+     * @param boardX 棋盘左上角X坐标
+     * @param boardY 棋盘左上角Y坐标
+     * @param boardSize 棋盘尺寸
+     */
+    private void drawAllPieces(Graphics2D g2d, int boardX, int boardY, int boardSize) {
+        if (Main.board == null) return;
+        
+        int cellWidth = boardSize / 8;
+        int cellHeight = boardSize / 9;
+        
+        // 遍历棋盘上的所有位置
+        for (int row = 0; row < 10; row++) {
+            for (int col = 0; col < 9; col++) {
+                int pieceNum = Main.board[row][col];
+                
+                // 如果该位置有棋子（编号不为0）
+                if (pieceNum != 0) {
+                    // 创建位置对象
+                    xy pos = new xy(col, row);
+                    // 绘制棋子
+                    drawPiece(g2d, pieceNum, pos);
+                }
+            }
+        }
     }
     
     private void createButtonPanel(JLayeredPane layeredPane) {
@@ -223,23 +352,19 @@ public class GameFrame implements Runnable {
                 
                 switch (command) {
                     case "读取":
-                        // TODO: 在此处添加读取功能的代码
+                        Main.board=Main.saveToboard(Database.getGame(Main.num).status);
                         System.out.println("读取按钮被点击");
-                        // 请在此处添加您的读取代码
                         break;
                         
                     case "保存":
-                        // TODO: 在此处添加保存功能的代码
                         Database.saveGame(Main.num, Main.boardTosave(Main.board), Main.tern);
                         System.out.println("保存按钮被点击");
                         // 请在此处添加您的保存代码
                         break;
                         
                     case "撤销":
-                        // TODO: 在此处添加撤销功能的代码
                         Main.board=Main.formal_board;
                         System.out.println("撤销按钮被点击");
-                        // 请在此处添加您的撤销代码
                         break;
                         
                     default:

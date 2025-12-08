@@ -94,6 +94,17 @@ public class GameFrame implements Runnable {
                     // 绘制所有棋子（在棋盘边缘线上面）
                     drawAllPieces(g2d, x, y, boardSize);
                     
+                    // 在右上角显示当前回合信息
+                    g2d.setFont(new Font("微软雅黑", Font.BOLD, 20));
+                    // 根据当前回合设置字体颜色（红方用红色，黑方用黑色）
+                    g2d.setColor(Main.tern ? Color.RED : Color.BLACK);
+                    String turnText = Main.tern ? "红方回合" : "黑方回合";
+                    FontMetrics fm = g2d.getFontMetrics();
+                    int textWidth = fm.stringWidth(turnText);
+                    int textX = getWidth() - textWidth - 50; // 距离右边50像素
+                    int textY = 50; // 距离顶部50像素
+                    g2d.drawString(turnText, textX, textY);
+                    
                     g2d.dispose();
                 }
                 
@@ -284,9 +295,9 @@ public class GameFrame implements Runnable {
         buttonPanel.setOpaque(false);
         buttonPanel.setBounds(0, 0, 500, 80);
         
-        String[] buttonTexts = {"读取", "保存", "撤销"};
+        String[] buttonTexts = {"读取", "保存", "撤销", "新建"};
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             JButton button = new JButton(buttonTexts[i]) {
                 @Override
                 protected void paintComponent(Graphics g) {
@@ -357,16 +368,49 @@ public class GameFrame implements Runnable {
                         break;
                         
                     case "保存":
-                        Database.saveGame(Main.num, Main.boardTosave(Main.board), Main.tern);
+                        if(Main.num != 0) {
+                            // 创建新存档
+                            int newSaveNum = Database.getNextSaveNum();
+                            Database.saveGame(newSaveNum, Main.boardTosave(Main.board), Main.tern);
+                            // 更新用户表中的存档编号
+                            Database.updateUserSave(Main.username, newSaveNum);
+                            // 删除原本的存档
+                            Database.deleteGame(Main.num);
+                            // 更新Main.num为新的存档编号
+                            Main.num = newSaveNum;
+                            System.out.println("新存档已创建，编号：" + newSaveNum + "，原存档已删除");
+                        } else {
+                            // 在usr数据库中将save改为以用户账号为基础生成的hash值，hash值为int类型
+                            int hash = Main.username.hashCode();
+                            Database.saveGame(hash, Main.boardTosave(Main.board), Main.tern);
+                            // 更新用户表中的存档编号
+                            Database.updateUserSave(Main.username, hash);
+                            // 更新Main.num为新的存档编号
+                            Main.num = hash;
+                            System.out.println("存档已创建，编号：" + hash);
+                        }
                         System.out.println("保存按钮被点击");
-                        // 请在此处添加您的保存代码
                         break;
                         
                     case "撤销":
                         Main.board=Main.formal_board;
                         System.out.println("撤销按钮被点击");
                         break;
-                        
+                         
+                    case "新建":
+                        // 重置棋盘为默认布局
+                        Main.board = Main.saveToboard(Env.DEFAULT_BOARD.toString());
+                        // 重置回合为红方先行
+                        Main.tern = true;
+                        // 重置选择状态
+                        Main.selected = false;
+                        Main.select = new xy(-1, -1);
+                        Main.last = new xy(-1, -1);
+                        // 更新正式棋盘（用于撤销操作）
+                        for (int j = 0; j < 10; j++)
+                            System.arraycopy(Main.board[j], 0, Main.formal_board[j], 0, 9);
+                        System.out.println("新建按钮被点击，棋盘已重置为默认布局");
+                        break;
                     default:
                         System.out.println("未知命令: " + command);
                         break;

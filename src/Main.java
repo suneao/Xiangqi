@@ -25,6 +25,7 @@ public class Main {
         Database.connectToDatabase();
         // System.out.println(boardTosave(default_board));
         Main.board = saveToboard(Env.DEFAULT_BOARD.toString());
+        // 确保正确复制棋盘数组内容到formal_board
         for (int i = 0; i < 10; i++)
             System.arraycopy(Main.board[i], 0, Main.formal_board[i], 0, 9);
         Login.main(args);

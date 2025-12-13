@@ -1,10 +1,10 @@
 public class GameLoop implements Runnable {
     private volatile boolean running = true;
-    
+
     public void stop() {
         running = false;
     }
-    
+
     @Override
     public void run() {
         while (running) {

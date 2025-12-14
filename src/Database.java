@@ -81,6 +81,9 @@ public class Database {
             pstmt.setInt(1, num);
             pstmt.setString(2, status);
             pstmt.setBoolean(3, tern);
+            // 添加缺失的参数4和5（用于ON DUPLICATE KEY UPDATE）
+            pstmt.setString(4, status);
+            pstmt.setBoolean(5, tern);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0)
                 System.out.println("游戏数据保存成功！");
@@ -128,7 +131,7 @@ public class Database {
             if (affectedRows > 0)
                 System.out.println("游戏数据删除成功！");
             else
-                System.out.println("游戏数据删除失败。");
+                System.out.println("游戏数据删除操作完成（未找到指定编号的存档记录）。");
         } catch (SQLException e) {
             System.err.println("删除游戏数据时出错: " + e.getMessage());
             e.printStackTrace();

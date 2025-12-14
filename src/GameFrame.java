@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.BasicStroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.RoundRectangle2D;
@@ -160,6 +161,7 @@ public class GameFrame implements Runnable {
                     if (clickedPos != null) {
                         System.out.println("点击位置: 行=" + clickedPos.y + ", 列=" + clickedPos.x);
                         // 可以在这里添加棋子选择逻辑
+                        // 例如，更新Main.select变量，触发重绘
                     }
                 }
             });
@@ -256,7 +258,6 @@ public class GameFrame implements Runnable {
 
     private void detectBoardSelectionAndTern() {
         // 触发棋盘重绘，更新棋子显示
-        Main.board=Main.default_board;
         if (chessBoardPanel != null) {
             chessBoardPanel.repaint();
         }
@@ -287,6 +288,75 @@ public class GameFrame implements Runnable {
                     // 绘制棋子
                     drawPiece(g2d, pieceNum, pos);
                 }
+            }
+        }
+        
+        // 绘制selection标记
+        drawSelectionMarks(g2d, boardX, boardY, boardSize);
+    }
+    
+    /**
+     * 绘制Main.selection数组中标记的位置
+     */
+    private void drawSelectionMarks(Graphics2D g2d, int boardX, int boardY, int boardSize) {
+        if (Main.selection == null) return;
+        
+        int cellWidth = boardSize / 8;
+        int cellHeight = boardSize / 9;
+        int radius = Math.min(cellWidth, cellHeight) / 2; // 圆环的半径，增大到原来的1.5倍
+        int strokeWidth = Math.max(cellWidth, cellHeight) / 15; // 线条宽度，适当增大
+        int gapSize = strokeWidth * 2; // 十字缺口的大小，保持合适比例
+        
+        for (int row = 0; row < 10; row++) {
+            for (int col = 0; col < 9; col++) {
+                int selectionValue = Main.selection[row][col];
+                if (selectionValue == 0) continue;
+                
+                // 计算位置（交叉点中心）
+                int centerX = boardX + col * cellWidth;
+                int centerY = boardY + row * cellHeight;
+                
+                // 根据selectionValue绘制不同的标记
+                Color markColor;
+                switch (selectionValue) {
+                    case 1: // 上一步位置
+                        markColor = new Color(169, 169, 169); // 深灰色
+                        break;
+                    case 2: // 当前选中位置
+                        markColor = new Color(139, 69, 19); // 深棕色
+                        break;
+                    case 3: // 可走位置
+                        // 检查是否有敌方棋子
+                        boolean hasEnemyPiece = Main.board[row][col] != 0 && !GameLogic.isCurrentPlayersPiece(Main.board[row][col]);
+                        if (hasEnemyPiece) {
+                            markColor = new Color(220, 20, 60); // 深红色
+                        } else {
+                            markColor = new Color(0, 128, 0); // 深绿色
+                        }
+                        break;
+                    default:
+                        continue;
+                }
+                
+                // 设置线条样式
+                g2d.setColor(markColor);
+                g2d.setStroke(new BasicStroke(strokeWidth, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL));
+                
+                // 计算圆环的外矩形位置
+                int x = centerX - radius;
+                int y = centerY - radius;
+                int width = radius * 2;
+                int height = radius * 2;
+                
+                // 绘制四个带有缺口的圆弧，形成一个完整的圆环
+                // 顶部圆弧（右半部分）
+                g2d.drawArc(x, y, width, height, 0 + gapSize, 90 - gapSize * 2);
+                // 顶部圆弧（左半部分）
+                g2d.drawArc(x, y, width, height, 270 + gapSize, 90 - gapSize * 2);
+                // 底部圆弧（左半部分）
+                g2d.drawArc(x, y, width, height, 90 + gapSize, 90 - gapSize * 2);
+                // 底部圆弧（右半部分）
+                g2d.drawArc(x, y, width, height, 180 + gapSize, 90 - gapSize * 2);
             }
         }
     }
@@ -364,8 +434,14 @@ public class GameFrame implements Runnable {
 
                 switch (command) {
                     case "读取":
-                        Main.board=Main.saveToboard(Database.getGame(Main.num).status);
-                        System.out.println("读取按钮被点击");
+                        Gamesave savedGame = Database.getGame(Main.num);
+                        if (savedGame != null) {
+                            Main.board = Main.saveToboard(savedGame.status);
+                            Main.tern = savedGame.tern;
+                            System.out.println("成功读取存档");
+                        } else {
+                            System.out.println("未找到存档，无法读取");
+                        }
                         break;
 
                     case "保存":

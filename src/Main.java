@@ -1,12 +1,13 @@
 public class Main {
-    public static int[][] board = saveToboard(Env.DEFAULT_BOARD.toString());
-    public static int[][] formal_board = new int[10][9];
+    public static volatile int[][] board = saveToboard(Env.DEFAULT_BOARD.toString());
+    public static volatile int[][] formal_board = new int[10][9];
     public static int[][] selection = new int[10][9];
+    public static boolean hasUndone = false; // 用于标记是否已经执行了撤销操作
     public static boolean tern = true;
     public static xy select = new xy(-1,-1);
     public static boolean selected = false;
     public static xy last = new xy(-1,-1);
-    public static String username;
+    public static String username = "";
     public static int num;
     public static int[][] default_board = {
             {11, 17, 19, 23, 15, 23, 19, 17, 11},
@@ -23,9 +24,7 @@ public class Main {
 
     public static void main(String[] args) {
         Database.connectToDatabase();
-        // System.out.println(boardTosave(default_board));
         Main.board = saveToboard(Env.DEFAULT_BOARD.toString());
-        // 确保正确复制棋盘数组内容到formal_board
         for (int i = 0; i < 10; i++)
             System.arraycopy(Main.board[i], 0, Main.formal_board[i], 0, 9);
         Login.main(args);

@@ -445,33 +445,59 @@ public class GameFrame implements Runnable {
                         break;
 
                     case "保存":
-                        if(Main.num != 0) {
-                            // 创建新存档
-                            int newSaveNum = Database.getNextSaveNum();
-                            Database.saveGame(newSaveNum, Main.boardTosave(Main.board), Main.tern);
-                            // 更新用户表中的存档编号
-                            Database.updateUserSave(Main.username, newSaveNum);
-                            // 删除原本的存档
-                            Database.deleteGame(Main.num);
-                            // 更新Main.num为新的存档编号
-                            Main.num = newSaveNum;
-                            System.out.println("新存档已创建，编号：" + newSaveNum + "，原存档已删除");
+                        // 确保username不为空
+                        if (Main.username != null && !Main.username.isEmpty()) {
+                            // 创建棋盘的深拷贝，确保保存的是最新状态
+                            int[][] currentBoard = new int[10][9];
+                            for (int k = 0; k < 10; k++) {
+                                for (int j = 0; j < 9; j++) {
+                                    currentBoard[k][j] = Main.board[k][j];
+                                }
+                            }
+                            
+                            // 打印当前棋盘状态摘要，用于调试
+                            System.out.println("保存时棋盘状态摘要：");
+                            System.out.println("第4行第6列: " + Main.board[4][6]);
+                            System.out.println("第5行第6列: " + Main.board[5][6]);
+                            
+                            if(Main.num != 0) {
+                                // 直接更新现有存档
+                                Database.saveGame(Main.num, Main.boardTosave(currentBoard), Main.tern);
+                                System.out.println("存档已更新，编号：" + Main.num);
+                            } else {
+                                // 为新游戏生成唯一存档编号
+                                int newSaveNum = Database.getNextSaveNum();
+                                Database.saveGame(newSaveNum, Main.boardTosave(currentBoard), Main.tern);
+                                // 更新用户表中的存档编号
+                                Database.updateUserSave(Main.username, newSaveNum);
+                                Main.num = newSaveNum;
+                                System.out.println("新存档已创建，编号：" + newSaveNum);
+                            }
+                            System.out.println("保存按钮被点击");
                         } else {
-                            // 在usr数据库中将save改为以用户账号为基础生成的hash值，hash值为int类型
-                            int hash = Main.username.hashCode();
-                            Database.saveGame(hash, Main.boardTosave(Main.board), Main.tern);
-                            // 更新用户表中的存档编号
-                            Database.updateUserSave(Main.username, hash);
-                            // 更新Main.num为新的存档编号
-                            Main.num = hash;
-                            System.out.println("存档已创建，编号：" + hash);
+                            System.out.println("保存失败：用户未登录");
                         }
-                        System.out.println("保存按钮被点击");
                         break;
 
                     case "撤销":
-                        Main.board=Main.formal_board;
-                        System.out.println("撤销按钮被点击");
+                        // 检查是否已经执行过撤销操作
+                        if (!Main.hasUndone) {
+                            // 深拷贝formal_board到board，确保撤销后状态正确
+                            for (int j = 0; j < 10; j++) {
+                                System.arraycopy(Main.formal_board[j], 0, Main.board[j], 0, 9);
+                            }
+                            
+                            // 恢复上一步的回合状态（当前回合的相反状态）
+                            Main.tern = !Main.tern;
+                            
+                            // 设置撤销标志为true，防止重复撤销
+                            Main.hasUndone = true;
+                            
+                            System.out.println("撤销按钮被点击，已恢复到上一步");
+                        } else {
+                            // 已经执行过撤销，不做任何操作
+                            System.out.println("已经撤销过一步，不能重复撤销");
+                        }
                         break;
 
                     case "新建":
@@ -479,6 +505,8 @@ public class GameFrame implements Runnable {
                         Main.board = Main.saveToboard(Env.DEFAULT_BOARD.toString());
                         // 重置回合为红方先行
                         Main.tern = true;
+                        // 重置撤销标志
+                        Main.hasUndone = false;
                         // 重置选择状态
                         Main.selected = false;
                         Main.select = new xy(-1, -1);

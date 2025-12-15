@@ -50,6 +50,17 @@ public class Database {
                 return null;
             }
         }
+        
+        // 确保连接不是自动提交的，以便手动管理事务
+        try {
+            if (conn.getAutoCommit()) {
+                conn.setAutoCommit(false);
+            }
+        } catch (SQLException e) {
+            System.err.println("设置事务自动提交属性时出错: " + e.getMessage());
+            return null;
+        }
+        
         return conn;
     }
 
@@ -76,22 +87,58 @@ public class Database {
     public static void saveGame(int num, String status, boolean tern) {
         Connection conn = getValidConnection("保存游戏数据");
         if (conn == null) return;
-        String sql = "INSERT INTO xiangqi.save (num, status, tern) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = ?, tern = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, num);
-            pstmt.setString(2, status);
-            pstmt.setBoolean(3, tern);
-            // 添加缺失的参数4和5（用于ON DUPLICATE KEY UPDATE）
-            pstmt.setString(4, status);
-            pstmt.setBoolean(5, tern);
-            int affectedRows = pstmt.executeUpdate();
-            if (affectedRows > 0)
-                System.out.println("游戏数据保存成功！");
-            else
-                System.out.println("游戏数据保存失败。");
+        
+        try {
+            // 开始事务
+            conn.setAutoCommit(false);
+            
+            // 打印调试信息
+            System.out.println("准备保存游戏数据：");
+            System.out.println("存档编号: " + num);
+            System.out.println("游戏状态长度: " + status.length());
+            System.out.println("当前玩家: " + tern);
+            
+            // 先删除同编号的旧存档
+            String deleteSql = "DELETE FROM xiangqi.save WHERE num = ?";
+            try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+                deleteStmt.setInt(1, num);
+                int deletedRows = deleteStmt.executeUpdate();
+                System.out.println("删除旧存档影响的行数: " + deletedRows);
+            }
+            
+            // 插入新存档
+            String insertSql = "INSERT INTO xiangqi.save (num, status, tern) VALUES (?, ?, ?)";
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                insertStmt.setInt(1, num);
+                insertStmt.setString(2, status);
+                insertStmt.setBoolean(3, tern);
+                int insertedRows = insertStmt.executeUpdate();
+                System.out.println("插入新存档影响的行数: " + insertedRows);
+            }
+            
+            // 提交事务
+            conn.commit();
+            System.out.println("保存操作完成");
+            System.out.println("游戏数据保存成功！");
+            
+            // 验证保存结果
+            Gamesave verifySave = getGame(num);
+            if (verifySave != null) {
+                System.out.println("保存验证成功：存档确实存在");
+            } else {
+                System.out.println("保存验证失败：存档不存在");
+            }
         } catch (SQLException e) {
             System.err.println("保存游戏数据时出错: " + e.getMessage());
             e.printStackTrace();
+            // 发生异常时回滚事务
+            try {
+                if (conn != null && !conn.isClosed()) {
+                    conn.rollback();
+                }
+            } catch (SQLException rollbackEx) {
+                System.err.println("回滚事务时出错: " + rollbackEx.getMessage());
+            }
         }
     }
 

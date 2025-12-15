@@ -10,8 +10,8 @@ public class Gaming {
             Main.tern = true;
             System.out.println("未找到存档，使用默认棋盘");
             // 为新游戏设置一个临时存档编号
-            if (Main.num == 0 && !Main.username.isEmpty()) {
-                Main.num = Main.username.hashCode();
+            if (Main.num == 0 && Main.username != null && !Main.username.isEmpty()) {
+                Main.num = Database.getNextSaveNum();
             }
         }
         Thread frameThread = new Thread(new GameFrame());
@@ -20,21 +20,21 @@ public class Gaming {
         loopThread.start();
         
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if(Main.num != 0) {
-                int newSaveNum = Database.getNextSaveNum();
-                Database.saveGame(newSaveNum, Main.boardTosave(Main.board), Main.tern);
-                Database.updateUserSave(Main.username, newSaveNum);
-                Database.deleteGame(Main.num);
-                Main.num = newSaveNum;
-                System.out.println("新存档已创建，编号：" + newSaveNum + "，原存档已删除");
-            } else {
-                Database.saveGame(Main.username.hashCode(), Main.boardTosave(Main.board), Main.tern);
-                Database.updateUserSave(Main.username, Main.username.hashCode());
-                Main.num = Main.username.hashCode();
-                System.out.println("存档已创建，编号：" + Main.username.hashCode());
+            // 在程序关闭前保存游戏
+            if (Main.username != null && !Main.username.isEmpty() && Main.board != null) {
+                if (Main.num != 0) {
+                    // 直接更新现有存档，不创建新存档
+                    Database.saveGame(Main.num, Main.boardTosave(Main.board), Main.tern);
+                } else {
+                    // 生成唯一新存档编号
+                    int newSaveNum = Database.getNextSaveNum();
+                    Database.saveGame(newSaveNum, Main.boardTosave(Main.board), Main.tern);
+                    Database.updateUserSave(Main.username, newSaveNum);
+                    Main.num = newSaveNum;
+                }
             }
+            // 关闭数据库连接
             Database.closeDatabaseConnection();
-            System.out.println("游戏程序正在关闭...");
         }));
     }
 }

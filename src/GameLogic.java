@@ -59,10 +59,6 @@ public class GameLogic {
             Main.select = new xy(-1, -1);
         }
         
-        for (int i = 0; i < 10; i++) {
-            System.arraycopy(Main.board[i], 0, Main.formal_board[i], 0, Main.board[i].length);
-        }
-        
         // 更新selection数组，显示上一步位置、当前选中位置和可走位置
         updateSelection();
     }
@@ -220,12 +216,15 @@ public class GameLogic {
             // 胜利后重置游戏
             resetGame();
         } else {
-            // 判断是否将军对方
+            // 判断是否将军对方（在切换回合前，检测移动后对方是否被将军）
+            // 移动方是Main.tern，对方是!Main.tern，所以检测对方是否被将军
             opponentInCheck = isKingInCheck(Main.board, !Main.tern);
         }
 
         // 切换回合
         Main.tern = !Main.tern;
+        // 移动成功后重置撤销标志，允许再次撤销
+        Main.hasUndone = false;
 
         if (!gameOver && opponentInCheck) {
             JOptionPane.showMessageDialog(null,
@@ -241,7 +240,7 @@ public class GameLogic {
      * redKing = true 代表判断“红方将/帅是否在被攻击”。
      */
     private static boolean isKingInCheck(int[][] board, boolean redKing) {
-        int kingValue = redKing ? 14 : 15;
+        int kingValue = redKing ? 15 : 14; // 修正：红方帅是15（奇数），黑方将是14（偶数）
         xy kingPos = findPiece(board, kingValue);
         if (kingPos == null) return false; // 已经被吃掉，游戏会被判结束
 

@@ -9,7 +9,7 @@ public class GameLoop implements Runnable {
     public void run() {
         while (running) {
             GameLogic.main(null);
-            waitFor(8); // 从16ms改为8ms，实现120fps
+            waitFor(8);
 
         }
     }

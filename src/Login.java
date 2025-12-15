@@ -123,10 +123,6 @@ public class Login {
         buttonPanel.add(loginButton);
         buttonPanel.add(registerButton);
 
-        // 添加按钮到面板
-        buttonPanel.add(loginButton);
-        buttonPanel.add(registerButton);
-
         // 添加所有组件到内容面板
         JPanel centerPanel = new JPanel(new BorderLayout(0, 10));
         centerPanel.setOpaque(false);

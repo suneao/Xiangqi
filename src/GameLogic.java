@@ -16,54 +16,65 @@ public class GameLogic {
     }
 
     /**
-     * 每一帧的逻辑更新，目前主要是同步 formal_board，
-     * 方便以后扩展悔棋等功能。
+     * 每一帧的游戏逻辑更新
+     * 处理棋子选择、移动和游戏状态更新
      */
     public static void update() {
         if (Main.board == null) return;
 
-        if (Main.formal_board == null
-                || Main.formal_board.length != Main.board.length
-                || Main.formal_board[0].length != Main.board[0].length) {
+        // 初始化正式棋盘（用于悔棋功能）
+        if (Main.formal_board == null || Main.formal_board.length != Main.board.length) {
             Main.formal_board = new int[Main.board.length][Main.board[0].length];
         }
 
-        // 检测棋子移动意图
-        if (Main.select != null && Main.select.x != -1 && Main.select.y != -1) {
-            // 检查点击位置是否有棋子
-            if (Main.board[Main.select.y][Main.select.x] != 0 && isCurrentPlayersPiece(Main.board[Main.select.y][Main.select.x])) {
-                // 点击了当前玩家的棋子，选中它
-                // 只有当点击的位置与上次选中的位置不同时，才更新选择
-                if (lastSelect == null || lastSelect.x != Main.select.x || lastSelect.y != Main.select.y) {
-                    lastSelect = new xy(Main.select.x, Main.select.y);
-                    System.out.println("选中棋子");
-                }
-            } else if (lastSelect != null) {
-                // 点击了其他位置，检查是否是可走位置
-                boolean isMoveable = canMove(Main.board, lastSelect.x, lastSelect.y, Main.select.x, Main.select.y, Main.tern);
-                if (isMoveable) {
-                    // 点击了可走位置，移动棋子
-                    boolean moved = tryMove(lastSelect, Main.select);
-                    if (moved) {
-                        System.out.println("棋子移动成功");
-                        lastSelect = null; // 移动后取消选择
-                    }
-                } else {
-                    // 点击了不能走的位置，取消选择
-                    lastSelect = null;
-                    System.out.println("取消选择棋子");
-                }
-            }
-            
-            // 处理完选择后，重置Main.select变量，避免每一帧都重复处理
-            Main.select = new xy(-1, -1);
-        }
+        // 处理棋子选择逻辑
+        handlePieceSelection();
         
-        // 更新selection数组，显示上一步位置、当前选中位置和可走位置
+        // 更新选择状态数组
         updateSelection();
     }
 
-    // 对外查询是否结束、赢家是谁
+    /**
+     * 处理棋子选择和移动逻辑
+     */
+    private static void handlePieceSelection() {
+        if (Main.select == null || Main.select.x == -1 || Main.select.y == -1) return;
+
+        int clickedX = Main.select.x;
+        int clickedY = Main.select.y;
+        int clickedPiece = Main.board[clickedY][clickedX];
+
+        // 点击了当前玩家的棋子
+        if (clickedPiece != 0 && isCurrentPlayersPiece(clickedPiece)) {
+            // 选中棋子
+            if (lastSelect == null || lastSelect.x != clickedX || lastSelect.y != clickedY) {
+                lastSelect = new xy(clickedX, clickedY);
+                System.out.println("选中棋子");
+            }
+        } 
+        // 点击了其他位置（可能是移动目标）
+        else if (lastSelect != null) {
+            // 检查是否可移动
+            boolean canMove = canMove(Main.board, lastSelect.x, lastSelect.y, clickedX, clickedY, Main.tern);
+            if (canMove) {
+                // 尝试移动棋子
+                boolean moved = tryMove(lastSelect, Main.select);
+                if (moved) {
+                    System.out.println("棋子移动成功");
+                    lastSelect = null; // 移动后取消选择
+                }
+            } else {
+                // 不能移动，取消选择
+                lastSelect = null;
+                System.out.println("取消选择棋子");
+            }
+        }
+        
+        // 重置选择状态
+        Main.select = new xy(-1, -1);
+    }
+
+    // 游戏状态查询方法
     public static boolean isGameOver() {
         return gameOver;
     }
@@ -72,26 +83,29 @@ public class GameLogic {
         return winner;
     }
 
-    // 工具方法：判断颜色 / 同方
+    // 棋子颜色判断方法
     private static boolean isRedPiece(int piece) {
-        return piece != 0 && piece % 2 != 0;
+        return piece != 0 && piece % 2 != 0; // 奇数代表红方
     }
 
     private static boolean isBlackPiece(int piece) {
-        return piece != 0 && piece % 2 == 0;
+        return piece != 0 && piece % 2 == 0; // 偶数代表黑方
     }
 
+    // 判断两个棋子是否同一方
     public static boolean isSameSide(int p1, int p2) {
         if (p1 == 0 || p2 == 0) return false;
         return (p1 % 2) == (p2 % 2);
     }
 
+    // 判断棋子是否属于当前玩家
     public static boolean isCurrentPlayersPiece(int piece) {
         if (piece == 0) return false;
         boolean red = isRedPiece(piece);
         return Main.tern ? red : !red;
     }
 
+    // 判断坐标是否在棋盘范围内
     private static boolean inBoard(int x, int y) {
         return x >= 0 && x < 9 && y >= 0 && y < 10;
     }
@@ -184,6 +198,25 @@ public class GameLogic {
             return false;
         }
 
+        // 模拟移动，检查移动后自己是否会被将军
+        int captured = Main.board[dy][dx];
+        Main.board[dy][dx] = piece;
+        Main.board[sy][sx] = 0;
+        
+        boolean selfInCheck = isKingInCheck(Main.board, Main.tern);
+        
+        // 恢复模拟移动前的棋盘状态
+        Main.board[sy][sx] = piece;
+        Main.board[dy][dx] = captured;
+        
+        // 如果移动后自己会被将军，则不允许移动
+        if (selfInCheck) {
+            JOptionPane.showMessageDialog(null,
+                    "移动后会导致自己被将军！",
+                    "提示", JOptionPane.INFORMATION_MESSAGE);
+            return false;
+        }
+
         // 备份当前棋盘到 formal_board（用于悔棋等）
         if (Main.formal_board == null
                 || Main.formal_board.length != Main.board.length
@@ -194,7 +227,7 @@ public class GameLogic {
             System.arraycopy(Main.board[i], 0, Main.formal_board[i], 0, Main.board[i].length);
         }
 
-        int captured = Main.board[dy][dx];
+        // 执行实际移动
         Main.board[dy][dx] = piece;
         Main.board[sy][sx] = 0;
         Main.last = new xy(dx, dy);
@@ -435,8 +468,10 @@ public class GameLogic {
                 return board[eyeY][eyeX] == 0;
 
             case 11: // 士 / 仕
+                // 士只能斜着走一步（对角线移动）
                 if (!(absDx == 1 && absDy == 1)) return false;
-                if (!inPalace(dx, dy, isRed)) return false;
+                // 士只能在九宫格内移动，需要检查起始位置和目标位置都在九宫格内
+                if (!inPalace(sx, sy, isRed) || !inPalace(dx, dy, isRed)) return false;
                 return true;
 
             case 7: // 将 / 帅
@@ -479,14 +514,14 @@ public class GameLogic {
     }
 
     /**
-     * 判断某一坐标是否在“九宫格”内
+     * 判断某一坐标是否在"九宫格"内
      */
     private static boolean inPalace(int x, int y, boolean isRed) {
         if (x < 3 || x > 5) return false;
         if (isRed) {
-            return y >= 7 && y <= 9;
+            return y >= 0 && y <= 2;  // 红方九宫格在棋盘上方（y=0-2）
         } else {
-            return y >= 0 && y <= 2;
+            return y >= 7 && y <= 9;  // 黑方九宫格在棋盘下方（y=7-9）
         }
     }
 }

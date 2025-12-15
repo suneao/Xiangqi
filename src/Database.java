@@ -1,6 +1,8 @@
 import java.sql.*;
 
+// 数据库操作类
 public class Database {
+    // 数据库连接信息（从Env类获取）
     private static final String DB_URL = Env.DB_SERVER_URL.toString();
     private static final String DB_USER = Env.DB_USR.toString();
     private static final String DB_PASSWORD = Env.DB_PASSWORD.toString();
@@ -11,12 +13,17 @@ public class Database {
      */
     public static void connectToDatabase() {
         try {
+            // 加载MySQL驱动
             Class.forName("com.mysql.cj.jdbc.Driver");
+            
+            // 建立数据库连接
             connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-            if (connection != null && !connection.isClosed())
+            
+            if (connection != null && !connection.isClosed()) {
                 System.out.println("成功连接到数据库！");
-            else
+            } else {
                 System.out.println("无法连接到数据库。");
+            }
         } catch (SQLException e) {
             System.err.println("数据库连接失败: " + e.getMessage());
             e.printStackTrace();

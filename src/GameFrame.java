@@ -519,11 +519,11 @@ public class GameFrame implements Runnable {
     private void createButtonPanel(JLayeredPane layeredPane) {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setOpaque(false);
-        buttonPanel.setBounds(0, 0, 500, 80);
+        buttonPanel.setBounds(0, 0, 550, 80);
 
-        String[] buttonTexts = {"读取", "保存", "撤销", "新建"};
+        String[] buttonTexts = {"读取", "保存", "撤销", "新建", "投降"};
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             JButton button = new JButton(buttonTexts[i]) {
                 @Override
                 protected void paintComponent(Graphics g) {
@@ -727,6 +727,9 @@ public class GameFrame implements Runnable {
                         for (int j = 0; j < 10; j++)
                             System.arraycopy(Main.board[j], 0, Main.formal_board[j], 0, 9);
                         System.out.println("新建按钮被点击，棋盘已重置为默认布局");
+                        break;
+                    case "投降":
+                        GameLogic.surrender();
                         break;
                     default:
                         System.out.println("未知命令: " + command);

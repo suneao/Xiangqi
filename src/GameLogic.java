@@ -326,6 +326,25 @@ public class GameLogic {
     }
 
     /**
+     * 投降功能：当前回合方认输，对方获胜
+     */
+    public static void surrender() {
+        if (gameOver) {
+            JOptionPane.showMessageDialog(null,
+                    "游戏已结束，请新建棋局或重新登录。",
+                    "提示", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        gameOver = true;
+        winner = Main.tern ? "黑方胜利" : "红方胜利";
+        String message = (Main.tern ? "红方投降，" : "黑方投降，") + winner + "！";
+        JOptionPane.showMessageDialog(null,
+                message,
+                "游戏结束", JOptionPane.INFORMATION_MESSAGE);
+        resetGame();
+    }
+
+    /**
      * 重置游戏状态
      */
     private static void resetGame() {

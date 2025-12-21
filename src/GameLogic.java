@@ -247,7 +247,24 @@ public class GameLogic {
         // 移动成功后重置撤销标志，允许再次撤销
         Main.hasUndone = false;
 
-        if (!gameOver && opponentInCheck) {
+        //添加：检查对方是否还有合法走法，防止出现因将死而没有任何可行走法时，游戏不结束
+        if (!hasAnyLegalMove(Main.board, Main.tern)) {
+            gameOver = true;
+
+            // 无路可走 => 输，胜者是另一方
+            winner = Main.tern ? "黑方胜利" : "红方胜利";
+
+            String reason = opponentInCheck ? "将死！" : "困毙（无子可走）！";
+            JOptionPane.showMessageDialog(null,
+                    reason + winner,
+                    "游戏结束", JOptionPane.INFORMATION_MESSAGE);
+
+            resetGame();
+            return true;
+        }
+
+        // 还有棋可走，才提示“将军”
+        if (opponentInCheck) {
             JOptionPane.showMessageDialog(null,
                     "将军！",
                     "提示", JOptionPane.INFORMATION_MESSAGE);
@@ -258,26 +275,32 @@ public class GameLogic {
 
     /**
      * 判断在当前局面下，某一方的将/帅是否被将军。
-     * redKing = true 代表判断“红方将/帅是否在被攻击”。
+     * redKing = true 代表判断“红方帅(15)是否被攻击”
+     * redKing = false 代表判断“黑方将(14)是否被攻击”
      */
     private static boolean isKingInCheck(int[][] board, boolean redKing) {
-        int kingValue = redKing ? 15 : 14; // 修正：红方帅是15（奇数），黑方将是14（偶数）
-        xy kingPos = findPiece(board, kingValue);
-        if (kingPos == null) return false; // 已经被吃掉，游戏会被判结束
+        int myKing = redKing ? 15 : 14;        // 红方帅 = 15（奇数），黑方将 = 14（偶数）
 
+        xy myKingPos = findPiece(board, myKing);
+        if (myKingPos == null) return false; // 已经被吃掉（tryMove 会判胜）
+
+        if (isFlyingGeneral(board)) return true;//补充：将帅“飞脸”也算将军
+
+        // 遍历所有棋子，判断是否能攻击到将/帅
         for (int y = 0; y < 10; y++) {
             for (int x = 0; x < 9; x++) {
                 int p = board[y][x];
                 if (p == 0) continue;
-                if (isSameSide(p, kingValue)) continue; // 同一方，跳过
-                // 敌方棋子是否可以按规则走到我方将/帅处
-                if (basicCanMove(board, x, y, kingPos.x, kingPos.y)) {
+                if (isSameSide(p, myKing)) continue; // 同一方跳过（减轻负担）
+
+                if (basicCanMove(board, x, y, myKingPos.x, myKingPos.y)) {
                     return true;
                 }
             }
         }
         return false;
     }
+
 
     /**
      * 找某个特定棋子的位置（用于找到将/帅）
@@ -294,11 +317,12 @@ public class GameLogic {
     }
 
     /**
-     * 判断执行这步棋是否“总体合法”，包括：
-     * 1. 起点有棋、是当前方
-     * 2. 终点不是己方棋子
-     * 3. 按棋子类型的走法合法
-     * 其他检查（如将军、将帅对脸）不再阻碍移动，仅在吃掉将帅时判定胜负
+     * 判断执行这步棋是否"总体合法"，包括基本规则和高级规则检查
+     * 1)棋子本身合法性
+     * 2) 模拟走子
+     * 3) 走完后不能将帅对脸
+     * 4) 走完后不能被将军
+     *如果走法合法返回true，否则返回false
      */
     private static boolean canMove(int[][] board, int sx, int sy, int dx, int dy, boolean redTurn) {
         if (!inBoard(sx, sy) || !inBoard(dx, dy)) return false;
@@ -308,13 +332,47 @@ public class GameLogic {
         if (piece == 0) return false;
 
         boolean isRed = isRedPiece(piece);
-        if (redTurn != isRed) return false; // 不是当前行动方
+        if (redTurn != isRed) return false;
 
         int dest = board[dy][dx];
-        if (dest != 0 && isSameSide(piece, dest)) return false; // 不能吃自己人
+        if (dest != 0 && isSameSide(piece, dest)) return false;
 
-        // 只检查棋子类型的基本走法
-        return basicCanMove(board, sx, sy, dx, dy);
+        if (!basicCanMove(board, sx, sy, dx, dy)) return false;
+
+        int[][] tmp = copyBoard(board);
+        tmp[dy][dx] = tmp[sy][sx];
+        tmp[sy][sx] = 0;
+
+        if (isFlyingGeneral(tmp)) return false;
+
+        if (isKingInCheck(tmp, isRed)) return false;
+
+        return true;
+    }
+
+    /**
+     * 检查指定玩家是否还有任何合法的走棋步骤
+     * 通过遍历整个棋盘，检查指定颜色的玩家是否还能进行任何合法移动。
+     * 这个方法主要用于判断玩家是否被将死或困毙，防止出现游戏进无法进行下一步的移动且无法结束游戏。
+     */
+    private static boolean hasAnyLegalMove(int[][] board, boolean redTurn) {
+        for (int sy = 0; sy < 10; sy++) {
+            for (int sx = 0; sx < 9; sx++) {
+                int p = board[sy][sx];
+                if (p == 0) continue;
+                if (redTurn != isRedPiece(p)) continue;
+
+                for (int dy = 0; dy < 10; dy++) {
+                    for (int dx = 0; dx < 9; dx++) {
+                        if (sx == dx && sy == dy) continue;
+                        if (canMove(board, sx, sy, dx, dy, redTurn)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static int[][] copyBoard(int[][] src) {
@@ -367,7 +425,10 @@ public class GameLogic {
         for (int i = 0; i < Main.board.length; i++) {
             System.arraycopy(Main.board[i], 0, Main.formal_board[i], 0, Main.board[i].length);
         }
-        
+
+        // 修正：重置选择状态变量，防止出现新游戏开始时，棋盘上仍保有上一局的选中状态
+        lastSelect = null;
+
         System.out.println("游戏已重置");
     }
 
@@ -375,8 +436,8 @@ public class GameLogic {
      * 判断棋盘上是否出现“将帅对脸”的情况。
      */
     private static boolean isFlyingGeneral(int[][] board) {
-        xy redKing = findPiece(board, 14);
-        xy blackKing = findPiece(board, 15);
+        xy redKing = findPiece(board, 15);   // 修正：红帅 = 15
+        xy blackKing = findPiece(board, 14); // 修正：黑将 = 14
         if (redKing == null || blackKing == null) return false;
 
         if (redKing.x != blackKing.x) return false;
@@ -385,9 +446,7 @@ public class GameLogic {
         int minY = Math.min(redKing.y, blackKing.y) + 1;
         int maxY = Math.max(redKing.y, blackKing.y);
         for (int y = minY; y < maxY; y++) {
-            if (board[y][x] != 0) {
-                return false;
-            }
+            if (board[y][x] != 0) return false;
         }
         return true;
     }

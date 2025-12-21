@@ -1,5 +1,4 @@
 public class Main {
-    // 游戏状态变量
     public static volatile int[][] board = saveToboard(Env.DEFAULT_BOARD.toString());
     public static volatile int[][] formal_board = new int[10][9];
     public static int[][] selection = new int[10][9];
@@ -10,8 +9,6 @@ public class Main {
     public static xy last = new xy(-1,-1);
     public static String username = "";
     public static int num;
-    
-    // 默认棋盘布局
     public static int[][] default_board = {
         {11, 17, 19, 23, 15, 23, 19, 17, 11}, // 红方棋子
         { 0,  0,  0,  0,  0,  0,  0,  0,  0},
@@ -26,31 +23,20 @@ public class Main {
     };
 
     public static void main(String[] args) {
-        // 连接数据库并初始化游戏
         Database.connectToDatabase();
         Main.board = saveToboard(Env.DEFAULT_BOARD.toString());
-        
-        // 复制棋盘到正式棋盘
         for (int i = 0; i < 10; i++) {
             System.arraycopy(Main.board[i], 0, Main.formal_board[i], 0, 9);
         }
-        
-        // 启动登录界面
         Login.main(args);
     }
-    
-    // 将字符串转换为棋盘数组
     public static int[][] saveToboard(String status) {
         int[][] tmp = new int[10][9];
-        
-        // 初始化棋盘为全0
         for(int i = 0; i < 10; i++) {
             for(int j = 0; j < 9; j++) {
                 tmp[i][j] = 0;
             }
         }
-        
-        // 解析状态字符串
         for(int i = 0; i + 1 < status.length(); i += 2) {
             int row = i / 18;
             int col = (i % 18) / 2;
@@ -60,8 +46,6 @@ public class Main {
         }
         return tmp;
     }
-    
-    // 将棋盘数组转换为字符串
     public static String boardTosave(int[][] tmp) {
         StringBuilder status = new StringBuilder();
         for(int i = 0; i < 10; i++) {
@@ -72,8 +56,6 @@ public class Main {
         }
         return status.toString();
     }
-    
-    // 检查当前是否为游客模式
     public static boolean isGuest() {
         return username != null && username.equals("0");
     }

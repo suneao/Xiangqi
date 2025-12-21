@@ -72,4 +72,9 @@ public class Main {
         }
         return status.toString();
     }
+    
+    // 检查当前是否为游客模式
+    public static boolean isGuest() {
+        return username != null && username.equals("0");
+    }
 }

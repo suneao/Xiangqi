@@ -198,24 +198,8 @@ public class GameLogic {
             return false;
         }
 
-        // 模拟移动，检查移动后自己是否会被将军
+        // 获取目标位置的棋子（用于判断是否吃掉将/帅）
         int captured = Main.board[dy][dx];
-        Main.board[dy][dx] = piece;
-        Main.board[sy][sx] = 0;
-        
-        boolean selfInCheck = isKingInCheck(Main.board, Main.tern);
-        
-        // 恢复模拟移动前的棋盘状态
-        Main.board[sy][sx] = piece;
-        Main.board[dy][dx] = captured;
-        
-        // 如果移动后自己会被将军，则不允许移动
-        if (selfInCheck) {
-            JOptionPane.showMessageDialog(null,
-                    "移动后会导致自己被将军！",
-                    "提示", JOptionPane.INFORMATION_MESSAGE);
-            return false;
-        }
 
         // 备份当前棋盘到 formal_board（用于悔棋等）
         if (Main.formal_board == null
@@ -237,10 +221,11 @@ public class GameLogic {
         // 吃掉将/帅 => 直接结束
         if (captured == 14 || captured == 15) {
             gameOver = true;
+            // 修正胜利方判断：吃掉黑方将(14)是红方胜利，吃掉红方帅(15)是黑方胜利
             if (captured == 14) {
-                winner = "黑方胜利";
+                winner = "红方胜利";  // 修正：吃掉黑方将，红方胜利
             } else {
-                winner = "红方胜利";
+                winner = "黑方胜利";  // 修正：吃掉红方帅，黑方胜利
             }
             JOptionPane.showMessageDialog(null,
                     winner + "！",
@@ -248,6 +233,9 @@ public class GameLogic {
             
             // 胜利后重置游戏
             resetGame();
+            
+            // 添加：胜利后立即返回，避免继续执行回合切换逻辑
+            return true;
         } else {
             // 判断是否将军对方（在切换回合前，检测移动后对方是否被将军）
             // 移动方是Main.tern，对方是!Main.tern，所以检测对方是否被将军

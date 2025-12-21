@@ -92,6 +92,12 @@ public class Database {
      * @param tern 当前玩家
      */
     public static void saveGame(int num, String status, boolean tern) {
+        // 游客模式不允许保存
+        if (Main.isGuest()) {
+            System.out.println("游客模式无法保存游戏！");
+            return;
+        }
+        
         Connection conn = getValidConnection("保存游戏数据");
         if (conn == null) return;
         
@@ -192,6 +198,14 @@ public class Database {
         }
     }
     public static boolean loginUser(String username, String password) {
+        // 游客模式特殊处理：用户名"0"密码"0"
+        if (username.equals("0") && password.equals("0")) {
+            System.out.println("游客模式登录成功！");
+            Main.username = "0";
+            Main.num = 0;
+            return true;
+        }
+        
         Connection conn = getValidConnection("登录");
         if (conn == null) return false;
         
@@ -219,6 +233,12 @@ public class Database {
         return false;
     }
     public static boolean registerUser(String username, String password) {
+        // 禁止注册游客账号
+        if (username.equals("0")) {
+            System.out.println("禁止注册游客账号！");
+            return false;
+        }
+        
         Connection conn = getValidConnection("注册用户");
         if (conn == null) return false;
         String checkSql = "SELECT * FROM xiangqi.usr WHERE username = ?";
@@ -255,6 +275,12 @@ public class Database {
      * @param saveNum 新的存档编号
      */
     public static void updateUserSave(String username, int saveNum) {
+        // 游客模式不允许更新存档
+        if (Main.isGuest()) {
+            System.out.println("游客模式无法更新存档！");
+            return;
+        }
+        
         Connection conn = getValidConnection("更新用户存档");
         if (conn == null) return;
         

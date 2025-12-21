@@ -11,6 +11,7 @@ public class Login {
     private JPasswordField passwordField;
     private JButton loginButton;
     private JButton registerButton;
+    private JButton guestButton;
 
     public Login() {
         initialize();
@@ -19,7 +20,7 @@ public class Login {
     private void initialize() {
         frame = new JFrame("中国象棋登陆界面");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(450, 400);
+        frame.setSize(450, 450);
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
         
@@ -106,7 +107,7 @@ public class Login {
         inputPanel.add(passwordField);
 
         // 创建按钮面板
-        JPanel buttonPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+        JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 10, 10));
         buttonPanel.setOpaque(false);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
 
@@ -119,9 +120,15 @@ public class Login {
         styleButton(registerButton, new Color(255, 255, 255), false);
         registerButton.setForeground(new Color(100, 100, 100));
         
+        // 游客模式按钮
+        guestButton = new JButton("游客模式");
+        styleButton(guestButton, new Color(173, 216, 230), false); // 浅蓝色背景
+        guestButton.setForeground(new Color(0, 0, 139)); // 深蓝色文字
+        
         // 添加按钮到面板
         buttonPanel.add(loginButton);
         buttonPanel.add(registerButton);
+        buttonPanel.add(guestButton);
 
         // 添加所有组件到内容面板
         JPanel centerPanel = new JPanel(new BorderLayout(0, 10));
@@ -304,6 +311,23 @@ public class Login {
                 } else {
                     JOptionPane.showMessageDialog(frame, "注册失败！用户名可能已存在。", "注册失败", JOptionPane.ERROR_MESSAGE);
                 }
+            }
+        });
+
+        // 游客模式按钮事件
+        guestButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 设置游客身份信息
+                Main.username = "0";
+                Main.num = 0;
+                
+                // 显示游客模式提示
+                JOptionPane.showMessageDialog(frame, "进入游客模式！\n游客模式无法保存游戏进度。", "游客模式", JOptionPane.INFORMATION_MESSAGE);
+                
+                // 关闭登录窗口，启动游戏
+                frame.dispose();
+                Gaming.main(new String[0]);
             }
         });
 

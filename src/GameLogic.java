@@ -240,6 +240,18 @@ public class GameLogic {
             // 判断是否将军对方（在切换回合前，检测移动后对方是否被将军）
             // 移动方是Main.tern，对方是!Main.tern，所以检测对方是否被将军
             opponentInCheck = isKingInCheck(Main.board, !Main.tern);
+            
+            // 添加：检查被将军方是否还有合法走法（将死判断）
+            if (opponentInCheck && !hasAnyLegalMove(Main.board, !Main.tern)) {
+                gameOver = true;
+                // 被将死 => 输，胜者是移动方
+                winner = Main.tern ? "红方胜利" : "黑方胜利";
+                JOptionPane.showMessageDialog(null,
+                        "将死！" + winner,
+                        "游戏结束", JOptionPane.INFORMATION_MESSAGE);
+                resetGame();
+                return true;
+            }
         }
 
         // 切换回合
@@ -247,23 +259,20 @@ public class GameLogic {
         // 移动成功后重置撤销标志，允许再次撤销
         Main.hasUndone = false;
 
-        //添加：检查对方是否还有合法走法，防止出现因将死而没有任何可行走法时，游戏不结束
+        // 添加：检查对方是否还有合法走法（困毙判断）
         if (!hasAnyLegalMove(Main.board, Main.tern)) {
             gameOver = true;
-
             // 无路可走 => 输，胜者是另一方
             winner = Main.tern ? "黑方胜利" : "红方胜利";
-
-            String reason = opponentInCheck ? "将死！" : "困毙（无子可走）！";
+            String reason = "困毙（无子可走）！";
             JOptionPane.showMessageDialog(null,
                     reason + winner,
                     "游戏结束", JOptionPane.INFORMATION_MESSAGE);
-
             resetGame();
             return true;
         }
 
-        // 还有棋可走，才提示“将军”
+        // 还有棋可走，才提示"将军"
         if (opponentInCheck) {
             JOptionPane.showMessageDialog(null,
                     "将军！",

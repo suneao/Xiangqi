@@ -1,16 +1,11 @@
 import java.sql.*;
 
-// 数据库操作类
 public class Database {
-    // 数据库连接信息（从Env类获取）
     private static final String DB_URL = Env.DB_SERVER_URL.toString();
     private static final String DB_USER = Env.DB_USR.toString();
     private static final String DB_PASSWORD = Env.DB_PASSWORD.toString();
     private static Connection connection = null;
 
-    /**
-     * 连接到数据库
-     */
     public static void connectToDatabase() {
         try {
             // 加载MySQL驱动
@@ -33,19 +28,9 @@ public class Database {
             e.printStackTrace();
         }
     }
-    /**
-     * 获取数据库连接对象
-     * @return Connection对象
-     */
      public static Connection getConnection() {
         return connection;
     }
-    
-    /**
-     * 获取有效的数据库连接，如果连接断开则尝试重新连接
-     * @param operationDescription 操作描述，用于错误信息
-     * @return Connection对象或null
-     */
     private static Connection getValidConnection(String operationDescription) {
         Connection conn = getConnection();
         if (conn == null) {
@@ -57,8 +42,6 @@ public class Database {
                 return null;
             }
         }
-        
-        // 确保连接不是自动提交的，以便手动管理事务
         try {
             if (conn.getAutoCommit()) {
                 conn.setAutoCommit(false);
@@ -70,10 +53,6 @@ public class Database {
         
         return conn;
     }
-
-    /**
-     * 关闭数据库连接
-     */
     public static void closeDatabaseConnection() {
         try {
             if (connection != null && !connection.isClosed()) {
@@ -85,14 +64,7 @@ public class Database {
             e.printStackTrace();
         }
     }
-    /**
-     * 将游戏数据保存到数据库的save表中
-     * @param num 游戏编号
-     * @param status 游戏状态
-     * @param tern 当前玩家
-     */
     public static void saveGame(int num, String status, boolean tern) {
-        // 游客模式不允许保存
         if (Main.isGuest()) {
             System.out.println("游客模式无法保存游戏！");
             return;
@@ -102,24 +74,17 @@ public class Database {
         if (conn == null) return;
         
         try {
-            // 开始事务
             conn.setAutoCommit(false);
-            
-            // 打印调试信息
             System.out.println("准备保存游戏数据：");
             System.out.println("存档编号: " + num);
             System.out.println("游戏状态长度: " + status.length());
             System.out.println("当前玩家: " + tern);
-            
-            // 先删除同编号的旧存档
             String deleteSql = "DELETE FROM xiangqi.save WHERE num = ?";
             try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
                 deleteStmt.setInt(1, num);
                 int deletedRows = deleteStmt.executeUpdate();
                 System.out.println("删除旧存档影响的行数: " + deletedRows);
             }
-            
-            // 插入新存档
             String insertSql = "INSERT INTO xiangqi.save (num, status, tern) VALUES (?, ?, ?)";
             try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
                 insertStmt.setInt(1, num);
@@ -129,12 +94,10 @@ public class Database {
                 System.out.println("插入新存档影响的行数: " + insertedRows);
             }
             
-            // 提交事务
             conn.commit();
             System.out.println("保存操作完成");
             System.out.println("游戏数据保存成功！");
             
-            // 验证保存结果
             Gamesave verifySave = getGame(num);
             if (verifySave != null) {
                 System.out.println("保存验证成功：存档确实存在");
@@ -144,7 +107,6 @@ public class Database {
         } catch (SQLException e) {
             System.err.println("保存游戏数据时出错: " + e.getMessage());
             e.printStackTrace();
-            // 发生异常时回滚事务
             try {
                 if (conn != null && !conn.isClosed()) {
                     conn.rollback();
@@ -198,7 +160,6 @@ public class Database {
         }
     }
     public static boolean loginUser(String username, String password) {
-        // 游客模式特殊处理：用户名"0"密码"0"
         if (username.equals("0") && password.equals("0")) {
             System.out.println("游客模式登录成功！");
             Main.username = "0";
@@ -233,7 +194,6 @@ public class Database {
         return false;
     }
     public static boolean registerUser(String username, String password) {
-        // 禁止注册游客账号
         if (username.equals("0")) {
             System.out.println("禁止注册游客账号！");
             return false;
@@ -268,14 +228,7 @@ public class Database {
         }
         return false;
     }
-    
-    /**
-     * 更新用户表中的存档编号
-     * @param username 用户名
-     * @param saveNum 新的存档编号
-     */
     public static void updateUserSave(String username, int saveNum) {
-        // 游客模式不允许更新存档
         if (Main.isGuest()) {
             System.out.println("游客模式无法更新存档！");
             return;
@@ -300,11 +253,6 @@ public class Database {
             e.printStackTrace();
         }
     }
-    
-    /**
-     * 获取下一个可用的存档编号
-     * @return 下一个可用的存档编号
-     */
     public static int getNextSaveNum() {
         Connection conn = getValidConnection("获取下一个存档编号");
         if (conn == null)
@@ -322,6 +270,6 @@ public class Database {
             e.printStackTrace();
         }
         
-        return 1; // 如果没有找到最大编号，从1开始
+        return 1;
     }
 }

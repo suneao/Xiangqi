@@ -594,15 +594,27 @@ public class GameFrame implements Runnable {
 
                     case "撤销":
                         if (!Main.hasUndone) {
+                            boolean boardsAreEqual = true;
                             for (int j = 0; j < 10; j++) {
-                                System.arraycopy(Main.formal_board[j], 0, Main.board[j], 0, 9);
+                                for (int k = 0; k < 9; k++) {
+                                    if (Main.board[j][k] != Main.formal_board[j][k]) {
+                                        boardsAreEqual = false;
+                                        break;
+                                    }
+                                }
+                                if (!boardsAreEqual) break;
                             }
-
-                            Main.tern = !Main.tern;
-
-                            Main.hasUndone = true;
-
-                            System.out.println("撤销按钮被点击，已恢复到上一步");
+                            
+                            if (boardsAreEqual) {
+                                System.out.println("没有可撤销的步");
+                            } else {
+                                for (int j = 0; j < 10; j++) {
+                                    System.arraycopy(Main.formal_board[j], 0, Main.board[j], 0, 9);
+                                }
+                                Main.tern = !Main.tern;
+                                Main.hasUndone = true;
+                                System.out.println("撤销按钮被点击，已恢复到上一步");
+                            }
                         } else {
                             System.out.println("已经撤销过一步，不能重复撤销");
                         }
